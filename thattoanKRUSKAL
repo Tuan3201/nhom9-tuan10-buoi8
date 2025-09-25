@@ -1,0 +1,66 @@
+import random
+
+def kruskal(edges, num_v):
+    """Thực hiện thuật toán Kruskal và trả về MST."""
+    edges.sort(key=lambda x: x[2])
+    parent = list(range(num_v))
+
+    def find(i):
+        if parent[i] == i: return i
+        parent[i] = find(parent[i])
+        return parent[i]
+
+    def union(i, j):
+        root_i, root_j = find(i), find(j)
+        if root_i != root_j:
+            parent[root_j] = root_i
+            return True
+        return False
+
+    mst = []
+    total_weight = 0
+    for u, v, w in edges:
+        if find(u) != find(v):
+            union(u, v)
+            mst.append((u, v, w))
+            total_weight += w
+            if len(mst) == num_v - 1:
+                break
+    return mst, total_weight
+
+# --- DỮ LIỆU BAN ĐẦU ---
+V_4 = 4
+E_initial = [(0, 1, 1), (0, 2, 3), (1, 2, 4), (1, 3, 2), (2, 3, 5)]
+
+# --- YÊU CẦU B ---
+
+## 1. Thêm cạnh mới (1, 3, 6)
+print("--- 1. Thêm cạnh (1, 3, 6) ---")
+E_1 = E_initial + [(1, 3, 6)]
+mst_1, weight_1 = kruskal(E_1.copy(), V_4)
+print(f"MST: {mst_1}, Tổng trọng số: {weight_1}")
+print("Lý giải: Cạnh (1, 3, 6) bị bỏ qua vì trọng số lớn hơn cạnh (1, 3, 2) đã được chọn trước, việc thêm vào sẽ tạo chu trình. MST không đổi.")
+
+print("\n" + "-"*30)
+
+## 2. Kiểm tra với đồ thị có 6 đỉnh
+print("--- 2. Đồ thị có 6 đỉnh ---")
+V_6 = 6
+E_random = [(u, v, random.randint(1, 15)) for u, v in random.sample([(i, j) for i in range(V_6) for j in range(i + 1, V_6)], 10)]
+mst_2, weight_2 = kruskal(E_random.copy(), V_6)
+
+print(f"Các cạnh (ngẫu nhiên): {E_random}")
+print(f"MST (phải có 5 cạnh): {mst_2}")
+print(f"Tổng trọng số: {weight_2}")
+print(f"So sánh: MST có $V-1=5$ cạnh, lớn hơn MST 4 đỉnh ($3$ cạnh). Tổng trọng số $W_2$ thường lớn hơn do số lượng cạnh trong cây tăng.")
+
+print("\n" + "-"*30)
+
+## 3. Thay đổi trọng số: (0, 1) từ 1 thành 3
+print("--- 3. Thay đổi trọng số: (0, 1) từ 1 thành 3 ---")
+E_3 = [(0, 1, 3), (0, 2, 3), (1, 2, 4), (1, 3, 2), (2, 3, 5)]
+mst_3, weight_3 = kruskal(E_3.copy(), V_4)
+
+print(f"MST mới: {mst_3}")
+print(f"Tổng trọng số: {weight_3}")
+print("Lý giải: Tăng trọng số của (0, 1) khiến nó bị xét sau (1, 3, 2). MST thay đổi thành (1, 3, 2), (0, 2, 3), (0, 1, 3) (hoặc (1, 2, 4) tùy thứ tự sắp xếp) và tổng trọng số tăng từ 6 lên 8.")

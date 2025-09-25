@@ -1,0 +1,145 @@
+# prim_mst_variants.py
+# Code hoàn chỉnh theo yêu cầu: chạy Prim và in quá trình chọn cạnh
+# Bao gồm các kịch bản:
+#  A: đồ thị ban đầu, bắt đầu từ đỉnh 0
+#  B: thêm các cạnh mới liên quan tới đỉnh 4 (mẫu) và chạy lại
+#  C: đồ thị ban đầu, bắt đầu từ đỉnh 3
+#  D: thay đổi trọng số cạnh (0,3) từ 2 -> 6 và chạy lại
+
+import heapq
+from typing import List, Tuple, Dict, Any
+
+Edge = Tuple[int, int, int]
+
+
+def build_graph(edges: List[Edge]) -> Dict[int, List[Tuple[int,int]]]:
+    """Xây dựng danh sách kề cho đồ thị vô hướng từ danh sách cạnh."""
+    G: Dict[int, List[Tuple[int,int]]] = {}
+    for u, v, w in edges:
+        G.setdefault(u, []).append((v, w))
+        G.setdefault(v, []).append((u, w))
+    return G
+
+
+def prim_with_trace(edges: List[Edge], start: int, num_vertices: int = None) -> Dict[str, Any]:
+    """
+    Chạy Prim (dùng heap) và trả về trace, tổng trọng số, và danh sách cạnh MST.
+    - edges: danh sách các cạnh (u, v, w)
+    - start: đỉnh bắt đầu
+    - num_vertices: nếu biết số đỉnh (ví dụ 6), truyền vào để đảm bảo bao gồm các đỉnh cô lập
+    Trả về dict: {"trace": [(parent, u, w) ...], "total": total_weight, "mst": [(u,v,w)...]}
+    """
+    # Xác định tập đỉnh
+    verts = set()
+    for u, v, w in edges:
+        verts.add(u)
+        verts.add(v)
+    if num_vertices is not None:
+        for i in range(num_vertices):
+            verts.add(i)
+
+    # Xây dựng đồ thị
+    G = build_graph(edges)
+    for v in verts:
+        G.setdefault(v, [])
+
+    visited = set()
+    heap = [(0, start, -1)]  # (trọng số, đỉnh hiện tại, đỉnh cha)
+    total_weight = 0
+    mst_edges: List[Edge] = []
+    trace: List[Tuple[Any,int,int]] = []
+
+    while heap and len(visited) < len(verts):
+        weight, u, parent = heapq.heappop(heap)
+        if u in visited:
+            continue
+        visited.add(u)
+        total_weight += weight
+        if parent != -1:
+            trace.append((parent, u, weight))
+            mst_edges.append((parent, u, weight))
+        else:
+            trace.append(('start', u, 0))
+        for v, w in G[u]:
+            if v not in visited:
+                heapq.heappush(heap, (w, v, u))
+
+    return {"trace": trace, "total": total_weight, "mst": mst_edges}
+
+
+if __name__ == '__main__':
+    # Đồ thị ban đầu theo đề bài
+    edges_orig: List[Edge] = [
+        (0, 1, 1),
+        (0, 3, 2),
+        (1, 2, 3),
+        (1, 4, 2),
+        (2, 4, 1),
+        (2, 5, 3),
+        (3, 5, 2)
+    ]
+
+    NUM_VERTICES = 6  # đỉnh 0..5
+
+    # ---------- Kịch bản A ----------
+    print("=== Kịch bản A: Đồ thị ban đầu, bắt đầu từ đỉnh 0 ===")
+    resA = prim_with_trace(edges_orig, start=0, num_vertices=NUM_VERTICES)
+    for item in resA['trace']:
+        if item[0] == 'start':
+            print(f"  -> Bắt đầu từ đỉnh {item[1]}")
+        else:
+            print(f"  -> Chọn cạnh ({item[0]}, {item[1]}) với trọng số {item[2]}")
+    print(f"Tổng trọng số MST: {resA['total']}\n")
+
+    # ---------- Kịch bản B (thêm cạnh mới liên quan tới đỉnh 4) ----------
+    # Bạn có thể chỉnh sửa `extra_edges_b` để thử các cạnh khác.
+    extra_edges_b: List[Edge] = [
+        (4, 5, 2),  # ví dụ: nối 4 với 5
+        (4, 3, 4)   # ví dụ: nối 4 với 3
+    ]
+    edges_b = edges_orig + extra_edges_b
+
+    print("=== Kịch bản B: Thêm các cạnh mới liên quan tới đỉnh 4 (mẫu) ===")
+    resB = prim_with_trace(edges_b, start=0, num_vertices=NUM_VERTICES)
+    for item in resB['trace']:
+        if item[0] == 'start':
+            print(f"  -> Bắt đầu từ đỉnh {item[1]}")
+        else:
+            print(f"  -> Chọn cạnh ({item[0]}, {item[1]}) với trọng số {item[2]}")
+    print(f"Tổng trọng số MST sau khi thêm cạnh: {resB['total']}\n")
+
+    # ---------- Kịch bản C (bắt đầu từ đỉnh 3) ----------
+    print("=== Kịch bản C: Đồ thị ban đầu, bắt đầu từ đỉnh 3 ===")
+    resC = prim_with_trace(edges_orig, start=3, num_vertices=NUM_VERTICES)
+    for item in resC['trace']:
+        if item[0] == 'start':
+            print(f"  -> Bắt đầu từ đỉnh {item[1]}")
+        else:
+            print(f"  -> Chọn cạnh ({item[0]}, {item[1]}) với trọng số {item[2]}")
+    print(f"Tổng trọng số MST (bắt đầu từ 3): {resC['total']}\n")
+
+    # ---------- Kịch bản D (thay đổi trọng số cạnh (0,3) từ 2 -> 6) ----------
+    edges_d: List[Edge] = []
+    for u, v, w in edges_orig:
+        if (u == 0 and v == 3) or (u == 3 and v == 0):
+            edges_d.append((0, 3, 6))
+        else:
+            edges_d.append((u, v, w))
+
+    print("=== Kịch bản D: Thay đổi trọng số (0,3)=6, bắt đầu từ đỉnh 0 ===")
+    resD = prim_with_trace(edges_d, start=0, num_vertices=NUM_VERTICES)
+    for item in resD['trace']:
+        if item[0] == 'start':
+            print(f"  -> Bắt đầu từ đỉnh {item[1]}")
+        else:
+            print(f"  -> Chọn cạnh ({item[0]}, {item[1]}) với trọng số {item[2]}")
+    print(f"Tổng trọng số MST sau khi thay đổi trọng số (0,3)=6: {resD['total']}\n")
+
+    # ---------- In tổng hợp kết quả (dễ copy vào bài nộp) ----------
+    print("--- TỔNG HỢP (dễ copy) ---")
+    print("A_MST_edges:", resA['mst'], "total:", resA['total'])
+    print("B_MST_edges:", resB['mst'], "total:", resB['total'])
+    print("C_MST_edges:", resC['mst'], "total:", resC['total'])
+    print("D_MST_edges:", resD['mst'], "total:", resD['total'])
+
+    # Lưu ý: nếu bạn muốn xuất ra file (ví dụ CSV hoặc txt), mình có thể thêm phần xuất file.

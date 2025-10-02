@@ -1,0 +1,159 @@
+import heapq
+import time
+
+def dijkstra(G, src, n):
+    """Trả về danh sách dist từ src tới mọi đỉnh (không in chi tiết)."""
+    dist = [float('inf')] * n
+    prev = [None] * n
+    dist[src] = 0
+    heap = [(0, src)]
+    while heap:
+        d, u = heapq.heappop(heap)
+        if d > dist[u]:
+            continue
+        for v, w in G.get(u, []):
+            nd = dist[u] + w
+            if nd < dist[v]:
+                dist[v] = nd
+                prev[v] = u
+                heapq.heappush(heap, (nd, v))
+    return dist, prev
+
+def dijkstra_verbose(G, src, n):
+    """
+    Dijkstra với in chi tiết từng bước (bảng trạng thái).
+    In ra mỗi lần pop từ heap: dist[] hiện tại, heap, đỉnh u đang xử lý, và relax từng cạnh.
+    """
+    dist = [float('inf')] * n
+    prev = [None] * n
+    dist[src] = 0
+    heap = [(0, src)]
+    step = 0
+    print("Bắt đầu Dijkstra verbose (src = {})".format(src))
+    print("Bảng tiêu đề: step | u(popped) | heap(before pop) | dist[]")
+    while heap:
+        # Hiện trạng trước pop (sắp in)
+        heap_snapshot = list(heap)
+        d, u = heapq.heappop(heap)
+        step += 1
+        if d > dist[u]:
+            print(f"{step:3} | {u} (stale) | {heap_snapshot} | {dist}")
+            continue
+        print(f"{step:3} | {u} | {heap_snapshot} | {dist}")
+        for v, w in G.get(u, []):
+            nd = dist[u] + w
+            if nd < dist[v]:
+                old = dist[v]
+                dist[v] = nd
+                prev[v] = u
+                heapq.heappush(heap, (nd, v))
+                print(f"     relax edge {u}->{v} (w={w}): dist[{v}] {old} -> {nd}")
+            else:
+                print(f"     check edge {u}->{v} (w={w}): no update (candidate {nd} >= {dist[v]})")
+    print("Kết thúc Dijkstra verbose. Distances:", dist)
+    return dist, prev
+
+def bellman_ford(G, src, n):
+    """Bellman-Ford trả về dist, prev. Không kiểm tra chu trình âm trả về như bình thường."""
+    dist = [float('inf')] * n
+    prev = [None] * n
+    dist[src] = 0
+    # tập cạnh
+    edges = []
+    for u, adj in G.items():
+        for v, w in adj:
+            edges.append((u, v, w))
+    # relax V-1 lần
+    for i in range(n - 1):
+        updated = False
+        for u, v, w in edges:
+            if dist[u] != float('inf') and dist[u] + w < dist[v]:
+                dist[v] = dist[u] + w
+                prev[v] = u
+                updated = True
+        if not updated:
+            break
+    # (tùy chọn) kiểm tra chu trình âm
+    neg_cycle = False
+    for u, v, w in edges:
+        if dist[u] != float('inf') and dist[u] + w < dist[v]:
+            neg_cycle = True
+            break
+    return dist, prev, neg_cycle
+
+def reconstruct_path(prev, target):
+    """Tạo danh sách đỉnh từ source tới target theo mảng prev (hoặc [] nếu unreachable)."""
+    if prev is None:
+        return []
+    path = []
+    v = target
+    while v is not None:
+        path.append(v)
+        v = prev[v]
+    path.reverse()
+    return path
+
+def demo():
+    # Đồ thị A - ban đầu (4 đỉnh)
+    G_orig = {
+        0: [(1, 1), (2, 4)],
+        1: [(2, 2), (3, 5)],
+        2: [(3, 1)],
+        3: []
+    }
+    n_orig = 4
+
+    # Chạy Dijkstra trên đồ thị ban đầu (không in verbose)
+    d_orig, p_orig = dijkstra(G_orig, 0, n_orig)
+    bf_orig, p_bf_orig, neg = bellman_ford(G_orig, 0, n_orig)
+    print("Đồ thị ban đầu - Dijkstra dist:", d_orig)
+    print("Đồ thị ban đầu - Bellman-Ford dist:", bf_orig)
+    print()
+
+    # Thay trọng số (0,2) từ 4 -> 1
+    G_mod = {
+        0: [(1, 1), (2, 1)],
+        1: [(2, 2), (3, 5)],
+        2: [(3, 1)],
+        3: []
+    }
+    d_mod, p_mod = dijkstra(G_mod, 0, n_orig)
+    bf_mod, p_bf_mod, neg2 = bellman_ford(G_mod, 0, n_orig)
+    print("Sau khi đổi trọng số (0,2)=1 - Dijkstra dist:", d_mod)
+    print("Sau khi đổi trọng số (0,2)=1 - Bellman-Ford dist:", bf_mod)
+    print()
+
+    # Đồ thị 5 đỉnh ví dụ
+    G5 = {
+        0: [(1, 2), (2, 4)],
+        1: [(2, 1), (3, 7)],
+        2: [(3, 3), (4, 5)],
+        3: [(4, 1)],
+        4: []
+    }
+    n5 = 5
+    # đo thời gian chạy nhanh (demo)
+    t0 = time.perf_counter()
+    d5, p5 = dijkstra(G5, 0, n5)
+    t1 = time.perf_counter()
+    bf5, p_bf5, neg3 = bellman_ford(G5, 0, n5)
+    t2 = time.perf_counter()
+    print("Đồ thị 5 đỉnh - Dijkstra dist:", d5, f"(time {t1-t0:.8f}s)")
+    print("Đồ thị 5 đỉnh - Bellman-Ford dist:", bf5, f"(time {t2-t1:.8f}s)")
+    print()
+
+    # Ví dụ in đường đi cụ thể từ 0 tới 3 cho đồ thị ban đầu và đồ thị đã chỉnh
+    target = 3
+    path_orig = reconstruct_path(p_orig, target)
+    path_mod = reconstruct_path(p_mod, target)
+    print(f"Đường đi tối ưu 0 -> {target} trên đồ thị ban đầu (theo Dijkstra):", path_orig)
+    print(f"Đường đi tối ưu 0 -> {target} trên đồ thị đã chỉnh (theo Dijkstra):", path_mod)
+    print()
+
+    # Nếu muốn dạng bảng chi tiết cho ví dụ (SGK) thì gọi verbose
+    print("---- BẮT ĐẦU BẢNG DETAILED CHO ĐỒ THỊ BAN ĐẦU ----")
+    dijkstra_verbose(G_orig, 0, n_orig)
+    print("---- KẾT THÚC BẢNG DETAILED ----")
+
+if __name__ == "__main__":
+    demo()

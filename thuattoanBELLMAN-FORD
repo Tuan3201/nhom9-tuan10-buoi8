@@ -1,0 +1,100 @@
+import math
+
+def bellman_ford(n, edges, start_node=0):
+    """
+    Thực hiện thuật toán Bellman-Ford để tìm đường đi ngắn nhất từ đỉnh nguồn 
+    đến tất cả các đỉnh khác và phát hiện chu trình âm.
+
+    Args:
+        n (int): Số lượng đỉnh (từ 0 đến n-1).
+        edges (list): Danh sách các cạnh [(u, v, w), ...], 
+            trong đó u là đỉnh đi, v là đỉnh đến, w là trọng số.
+        start_node (int): Đỉnh nguồn (mặc định là 0).
+
+    Returns:
+        list: Danh sách khoảng cách ngắn nhất (dist) nếu không có chu trình âm,
+        hoặc thông báo lỗi nếu có chu trình âm.
+    """
+    # 1. Khởi tạo khoảng cách
+    # dist[i] là khoảng cách ngắn nhất từ start_node đến đỉnh i
+    dist = [float('inf')] * n
+    dist[start_node] = 0
+
+    # 2. Lặp n-1 lần để cập nhật khoảng cách (Relaxation)
+    for i in range(n - 1):
+        # Đặt một cờ để kiểm tra xem có bất kỳ sự cập nhật nào xảy ra trong lần lặp này không
+        updated = False
+        for u, v, w in edges:
+            # Nếu khoảng cách đến u không phải là vô cùng (đã có đường đi) 
+            # VÀ ta có thể tìm được đường đi ngắn hơn đến v qua u
+            if dist[u] != float('inf') and dist[u] + w < dist[v]:
+                dist[v] = dist[u] + w
+                updated = True
+        
+        # Tối ưu hóa: Nếu không có cập nhật nào xảy ra trong một lần lặp, 
+        # điều đó có nghĩa là đã tìm thấy đường đi ngắn nhất, ta có thể thoát sớm.
+        if not updated:
+            break
+
+    # 3. Kiểm tra chu trình âm (Lặp lần thứ n)
+    # Nếu lần lặp thứ n vẫn tiếp tục tìm thấy một đường đi ngắn hơn, thì có chu trình âm.
+    has_negative_cycle = False
+    for u, v, w in edges:
+        if dist[u] != float('inf') and dist[u] + w < dist[v]:
+            has_negative_cycle = True
+            break
+    
+    if has_negative_cycle:
+        return "PHÁT HIỆN CHU TRÌNH ÂM: Không thể tìm đường đi ngắn nhất."
+    
+    return dist
+
+# ==============================================================================
+# PHẦN A: Giải bài toán gốc
+# ==============================================================================
+
+# Dữ liệu đề bài:
+# Đồ thị có 4 đỉnh (0, 1, 2, 3)
+n_a = 4 
+edges_a = [
+    (0, 1, 1), 
+    (0, 2, 4), 
+    (1, 2, -3), 
+    (2, 3, 2)
+]
+start_node_a = 0
+
+print("=  Untitled1:67 - bellman_ford.py:67" * 40)
+print("A. GIẢI BÀI TOÁN GỐC (Đỉnh nguồn 0)  Untitled1:68 - bellman_ford.py:68")
+result_a = bellman_ford(n_a, edges_a, start_node_a)
+
+if isinstance(result_a, list):
+    print(f"Khoảng cách ngắn nhất từ 0: {result_a}  Untitled1:72 - bellman_ford.py:72")
+else:
+    print(result_a)
+
+# ==============================================================================
+# PHẦN B. YÊU CẦU SINH VIÊN SỬA VÀ LÝ GIẢI
+# ==============================================================================
+
+print("\n  Untitled1:80 - bellman_ford.py:80" + "=" * 40)
+print("B. KIỂM TRA CHU TRÌNH ÂM (Thêm cạnh (3, 2, 6))  Untitled1:81 - bellman_ford.py:81")
+
+# Thêm cạnh (3, 2) với trọng số -6
+edges_b = edges_a + [(3, 2, -6)] 
+n_b = 4
+start_node_b = 0
+
+print(f"Danh sách cạnh mới: {edges_b}  Untitled1:88 - bellman_ford.py:88")
+result_b = bellman_ford(n_b, edges_b, start_node_b)
+
+if isinstance(result_b, list):
+    print(f"Khoảng cách ngắn nhất từ 0: {result_b}  Untitled1:92 - bellman_ford.py:92")
+else:
+    print(result_b)
+
+print("\nLý giải sự thay đổi khi thêm cạnh (3, 2, 6):  Untitled1:96 - bellman_ford.py:96")
+print("1. Sau n1 lần lặp (3 lần), thuật toán tìm được: dist[2] = 1, dist[3] = 3.  Untitled1:97 - bellman_ford.py:97")
+print("2. Chu trình được tạo: 2 > 3 > 2. Trọng số chu trình: w(2, 3) + w(3, 2) = 2 + (6) = 4.  Untitled1:98 - bellman_ford.py:98")
+print("3. Trong lần lặp thứ n (lần 4), thuật toán tiếp tục cập nhật dist[2] và dist[3] (ví dụ: dist[2] sẽ giảm từ 1 xuống 1 + (4) = 3), do đó phát hiện ra chu trình âm.  Untitled1:99 - bellman_ford.py:99")
+print("4. BellmanFord trả về thông báo 'PHÁT HIỆN CHU TRÌNH ÂM'.  Untitled1:100 - bellman_ford.py:100")
